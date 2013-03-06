@@ -64,3 +64,31 @@ void darmu_flags_set(darmu_t *d, uint32_t value)
 {
     d->flags = value;
 }
+
+int darmu_single_step(darmu_t *du)
+{
+    darm_t d;
+
+    // calculate the raw offset of the program counter
+    uint32_t offset = darmu_mapping_lookup_raw(du, du->regs[PC]);
+
+    // read the instruction
+    uint32_t opcode = *(uint32_t *) &du->image[offset];
+
+    // disassemble the instruction
+    int ret = darm_armv7_disasm(&d, opcode);
+    if(ret < 0) return ret;
+
+    switch ((uint32_t) d.instr) {
+    default: {
+        darm_str_t str;
+        darm_str(&d, &str);
+        fprintf(stderr, "[-] instruction '%s' unhandled!\n", str.instr);
+        return -1;
+    }}
+
+    // increase the program counter
+    du->regs[PC] += 4;
+
+    return 0;
+}
