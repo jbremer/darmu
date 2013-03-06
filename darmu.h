@@ -24,17 +24,19 @@ typedef struct _darmu_t {
     darmu_mapping_t mappings[DARMU_MAPPINGS_COUNT];
 } darmu_t;
 
-void darmu_init(darmu_t *d, unsigned char *image, unsigned char *stack);
+void darmu_init(darmu_t *d, uint8_t *image, uint8_t *stack);
 
 int darmu_mapping_add(darmu_t *d, uint32_t raw, uint32_t raw_size,
     uint32_t virtual, uint32_t virtual_size);
-int darmu_mapping_lookup_virtual(darmu_t *d, unsigned int raw);
-int darmu_mapping_lookup_raw(darmu_t *d, unsigned int virtual);
+uint32_t darmu_mapping_lookup_virtual(darmu_t *d, uint32_t raw);
+uint32_t darmu_mapping_lookup_raw(darmu_t *d, uint32_t virtual);
 
 uint32_t darmu_register_get(darmu_t *d, uint32_t idx);
 void darmu_register_set(darmu_t *d, uint32_t idx, uint32_t value);
 
 uint32_t darmu_flags_get(darmu_t *d);
 void darmu_flags_set(darmu_t *d, uint32_t value);
+
+int darmu_single_step(darmu_t *du);
 
 #endif

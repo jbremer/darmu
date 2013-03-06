@@ -1,9 +1,11 @@
 #include <stdio.h>
+#include <string.h>
 #include "darm.h"
 #include "darmu.h"
 
-void darmu_init(darmu_t *d, unsigned char *image, unsigned char *stack)
+void darmu_init(darmu_t *d, uint8_t *image, uint8_t *stack)
 {
+    memset(d, 0, sizeof(darmu_t));
     d->image = image;
     d->stack = stack;
 }
@@ -21,7 +23,7 @@ int darmu_mapping_add(darmu_t *d, uint32_t raw, uint32_t raw_size,
     return 0;
 }
 
-int darmu_mapping_lookup_virtual(darmu_t *d, unsigned int raw)
+uint32_t darmu_mapping_lookup_virtual(darmu_t *d, uint32_t raw)
 {
     for (uint32_t i = 0; i < d->mapping_count; i++) {
         darmu_mapping_t *m = &d->mappings[i];
@@ -32,7 +34,7 @@ int darmu_mapping_lookup_virtual(darmu_t *d, unsigned int raw)
     return 0;
 }
 
-int darmu_mapping_lookup_raw(darmu_t *d, unsigned int virtual)
+uint32_t darmu_mapping_lookup_raw(darmu_t *d, uint32_t virtual)
 {
     for (uint32_t i = 0; i < d->mapping_count; i++) {
         darmu_mapping_t *m = &d->mappings[i];
@@ -77,7 +79,10 @@ int darmu_single_step(darmu_t *du)
 
     // disassemble the instruction
     int ret = darm_armv7_disasm(&d, opcode);
-    if(ret < 0) return ret;
+    if(ret < 0) {
+        fprintf(stderr, "Invalid instruction.. 0x%08x\n", opcode);
+        return ret;
+    }
 
     switch ((uint32_t) d.instr) {
     default: {

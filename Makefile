@@ -5,7 +5,7 @@ LIBS = -ldarm
 SRC = $(wildcard *.c)
 OBJ = $(SRC:.c=.o)
 
-default: $(OBJ) libdarm.so
+default: $(OBJ) libdarmu.so
 
 %.o: %.c
 	$(CC) $(CFLAGS) -o $@ -c $^
