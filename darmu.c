@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include "darm.h"
 #include "darmu.h"
 
@@ -69,33 +70,7 @@ void darmu_flags_set(darmu_t *d, uint32_t value)
     d->flags = value;
 }
 
-#define I(x) static void _##x(darmu_t *du, const darm_t *d)
-
-I(STMDB) {
-    uint32_t *Rn = (uint32_t *) du->regs[d->Rn];
-    uint32_t reglist = d->reglist;
-
-    while (reglist != 0) {
-        uint32_t reg = 32 - __builtin_clz(reglist) - 1;
-        *--Rn = du->regs[reg];
-        reglist &= ~(1 << reg);
-    }
-    if(d->W == B_SET) {
-        du->regs[d->Rn] = (uint32_t) Rn;
-    }
-}
-
-#undef I
-
-// define an instruction handler
-#define I(x) [I_##x] = _##x
-
-// this instruction is an alias
-#define I2(x, y) [I_##x] = _##y
-
-static void (*g_handlers[I_INSTRCNT])(darmu_t *du, const darm_t *d) = {
-    I(STMDB), I2(PUSH, STMDB),
-};
+extern void (*g_handlers[I_INSTRCNT])(darmu_t *du, const darm_t *d);
 
 int darmu_single_step(darmu_t *du)
 {
