@@ -67,6 +67,19 @@ void darmu_flags_set(darmu_t *d, uint32_t value)
     d->flags = value;
 }
 
+#define I(x) static void _##x(darmu_t *du, const darm_t *d)
+
+#undef I
+
+// define an instruction handler
+#define I(x) [I_##x] = _##x
+
+// this instruction is an alias
+#define I2(x, y) [I_##x] = _##y
+
+static void (*g_handlers[I_INSTRCNT])(darmu_t *du, const darm_t *d) = {
+};
+
 int darmu_single_step(darmu_t *du)
 {
     darm_t d;
@@ -84,13 +97,14 @@ int darmu_single_step(darmu_t *du)
         return ret;
     }
 
-    switch ((uint32_t) d.instr) {
-    default: {
+    if(g_handlers[d.instr] == NULL) {
         darm_str_t str;
         darm_str(&d, &str);
         fprintf(stderr, "[-] instruction '%s' unhandled!\n", str.instr);
         return -1;
-    }}
+    }
+
+    g_handlers[d.instr](du, &d);
 
     // increase the program counter
     du->regs[PC] += 4;

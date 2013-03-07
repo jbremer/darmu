@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -std=c99 -s -O2 -Wextra
+CFLAGS = -Wall -std=c99 -s -O2 -Wextra -Wno-unused-parameter
 DIRS = -Idarm -Ldarm
 LIBS = $(wildcard darm/*.o)
 
