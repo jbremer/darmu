@@ -88,17 +88,22 @@ int darmu_single_step(darmu_t *du)
         return ret;
     }
 
+    uint32_t pc = du->regs[PC];
+
     if(g_handlers[d.instr] == NULL) {
         darm_str_t str;
         darm_str(&d, &str);
         fprintf(stderr, "[-] instruction '%s' unhandled!\n", str.instr);
         return -1;
     }
+    else {
+        g_handlers[d.instr](du, &d);
+    }
 
-    g_handlers[d.instr](du, &d);
-
-    // increase the program counter
-    du->regs[PC] += 4;
+    // increase the program counter if it hasn't been altered
+    if(pc == du->regs[PC]) {
+        du->regs[PC] += 4;
+    }
 
     return 0;
 }
