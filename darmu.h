@@ -42,7 +42,12 @@ void darmu_flags_set(darmu_t *d, uint32_t value);
 
 int darmu_single_step(darmu_t *du);
 
+uint8_t darmu_read8(const darmu_t *d, uint32_t addr);
+uint16_t darmu_read16(const darmu_t *d, uint32_t addr);
 uint32_t darmu_read32(const darmu_t *d, uint32_t addr);
+
+void darmu_write8(const darmu_t *d, uint32_t addr, uint8_t value);
+void darmu_write16(const darmu_t *d, uint32_t addr, uint16_t value);
 void darmu_write32(const darmu_t *d, uint32_t addr, uint32_t value);
 
 #endif
