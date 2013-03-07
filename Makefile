@@ -1,19 +1,23 @@
 CC = gcc
-CFLAGS = -Wall -std=c99 -s -O2 -Idarm -Ldarm
-LIBS = -ldarm
+CFLAGS = -Wall -std=c99 -s -O2 -Wextra
+DIRS = -Idarm -Ldarm
+LIBS = $(wildcard darm/*.o)
 
 SRC = $(wildcard *.c)
 OBJ = $(SRC:.c=.o)
 
-FILES = $(OBJ) libdarmu.so
+FILES = $(OBJ) libdarmu.a libdarmu.so
 
 default: $(FILES)
 
 %.o: %.c
-	$(CC) $(CFLAGS) -o $@ -c $^
+	$(CC) $(CFLAGS) $(DIRS) -o $@ -c $^
 
-%.so: $(OBJ)
-	$(CC) -shared $(CFLAGS) -o $@ $^ $(LIBS)
+%.so: $(OBJ) $(LIBS)
+	$(CC) -shared $(CFLAGS) $(DIRS) -o $@ $^
+
+%.a: $(OBJ) $(LIBS)
+	ar cr $@ $^
 
 clean:
 	rm -rf $(FILES)
