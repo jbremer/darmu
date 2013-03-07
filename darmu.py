@@ -4,7 +4,7 @@ from ctypes import c_char, c_int32, c_uint32, c_char_p
 
 class _Darmu(Structure):
     _fields_ = [
-        ('padding', c_char * 0x200)
+        ('padding', c_char * 0x400)
     ]
 
 
@@ -40,7 +40,7 @@ def _set_func(name, restype, *argtypes):
     getattr(_lib, name).restype = restype
     getattr(_lib, name).argtypes = argtypes
 
-_lib = cdll.LoadLibrary('libdarmu.so')
+_lib = cdll.LoadLibrary('./libdarmu.so')
 _set_func('darmu_init', c_int32, POINTER(_Darmu), c_char_p, c_char_p)
 _set_func('darmu_mapping_add', c_int32, POINTER(_Darmu), c_uint32, c_uint32,
           c_uint32, c_uint32)
