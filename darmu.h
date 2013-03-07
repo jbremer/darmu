@@ -3,11 +3,14 @@
 
 // mapping from file offset to virtual offset
 typedef struct _darmu_mapping_t {
-    uint32_t raw;
+    // data blob
+    uint8_t *image;
+
+    // raw size of this blob
     uint32_t raw_size;
 
-    uint32_t virtual;
-    uint32_t virtual_size;
+    // virtual address of this blob
+    uint32_t address;
 } darmu_mapping_t;
 
 #define DARMU_MAPPINGS_COUNT 32
@@ -24,12 +27,12 @@ typedef struct _darmu_t {
     darmu_mapping_t mappings[DARMU_MAPPINGS_COUNT];
 } darmu_t;
 
-void darmu_init(darmu_t *d, uint8_t *image, uint8_t *stack);
+void darmu_init(darmu_t *d, uint8_t *stack, uint32_t stack_size);
 
-int darmu_mapping_add(darmu_t *d, uint32_t raw, uint32_t raw_size,
-    uint32_t virtual, uint32_t virtual_size);
-uint32_t darmu_mapping_lookup_virtual(darmu_t *d, uint32_t raw);
-uint32_t darmu_mapping_lookup_raw(darmu_t *d, uint32_t virtual);
+int darmu_mapping_add(darmu_t *d, uint8_t *image, uint32_t raw_size,
+    uint32_t address);
+uint32_t darmu_mapping_lookup_virtual(const darmu_t *d, uint8_t *raw);
+uint32_t *darmu_mapping_lookup_raw(const darmu_t *d, uint32_t address);
 
 uint32_t darmu_register_get(darmu_t *d, uint32_t idx);
 void darmu_register_set(darmu_t *d, uint32_t idx, uint32_t value);
@@ -38,5 +41,8 @@ uint32_t darmu_flags_get(darmu_t *d);
 void darmu_flags_set(darmu_t *d, uint32_t value);
 
 int darmu_single_step(darmu_t *du);
+
+uint32_t darmu_read32(const darmu_t *d, uint32_t addr);
+void darmu_write32(const darmu_t *d, uint32_t addr, uint32_t value);
 
 #endif
