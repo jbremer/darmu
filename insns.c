@@ -193,7 +193,7 @@ I(data_proc) {
 }
 
 I(cmp_op) {
-    uint32_t result, carry, overflow, value;
+    uint32_t result, carry = 0, overflow, value;
 
     value = darm_get_offset(d, du->regs[d->Rm]);
 
