@@ -21,15 +21,65 @@ static uint32_t add_with_carry(uint32_t x, uint32_t y, uint32_t carry_in,
 
 #define I(x) static void _##x(darmu_t *du, const darm_t *d)
 
-I(STMDB) {
+I(stm) {
     uint32_t Rn = du->regs[d->Rn];
     uint32_t reglist = d->reglist;
+
+    switch ((uint32_t) d->instr) {
+    case I_STM:
+        break;
+
+    case I_STMDA:
+        Rn -= 4 * __builtin_popcount(reglist) - 4;
+        break;
+
+    case I_STMDB: case I_PUSH:
+        Rn -= 4 * __builtin_popcount(reglist);
+        break;
+
+    case I_STMIB:
+        Rn += 4;
+        break;
+    }
 
     while (reglist != 0) {
         uint32_t reg = 32 - __builtin_clz(reglist) - 1;
         darmu_write32(du, Rn -= 4, du->regs[reg]);
         reglist &= ~(1 << reg);
     }
+
+    if(d->W == B_SET) {
+        du->regs[d->Rn] = Rn;
+    }
+}
+
+I(ldm) {
+    uint32_t Rn = du->regs[d->Rn];
+    uint32_t reglist = d->reglist;
+
+    switch ((uint32_t) d->instr) {
+    case I_LDM: case I_POP:
+        break;
+
+    case I_LDMDA:
+        Rn -= 4 * __builtin_popcount(reglist) - 4;
+        break;
+
+    case I_LDMDB:
+        Rn -= 4 * __builtin_popcount(reglist);
+        break;
+
+    case I_LDMIB:
+        Rn += 4;
+        break;
+    }
+
+    while (reglist != 0) {
+        uint32_t reg = __builtin_ctz(reglist);
+        du->regs[reg] = darmu_read32(du, Rn);
+        reglist &= ~(1 << reg), Rn += 4;
+    }
+
     if(d->W == B_SET) {
         du->regs[d->Rn] = Rn;
     }
@@ -137,7 +187,8 @@ I(SUB) {
 #define A(x, y) [I_##x] = _##y
 
 void (*g_handlers[I_INSTRCNT])(darmu_t *du, const darm_t *d) = {
-    D(STMDB), A(PUSH, STMDB),
+    A(STM, stm), A(STMDA, stm), A(STMDB, stm), A(PUSH, stm), A(STMIB, stm),
+    A(LDM, ldm), A(POP, ldm), A(LDMDA, ldm), A(LDMDB, ldm), A(LDMIB, ldm),
 
     D(B), D(MOV), D(BL),
 
