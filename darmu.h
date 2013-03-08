@@ -20,7 +20,13 @@ typedef struct _darmu_t {
     uint8_t *stack;
 
     uint32_t regs[16];
-    uint32_t flags;
+    struct {
+        uint32_t reserved : 28;
+        uint8_t N : 1; // negative result
+        uint8_t Z : 1; // zero result
+        uint8_t C : 1; // carry bit
+        uint8_t V : 1; // overflowed
+    } flags;
 
     // each file offset to virtual offset mapping
     uint32_t mapping_count;
