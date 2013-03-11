@@ -86,7 +86,7 @@ I(ldm) {
 }
 
 I(ldr_str) {
-    uint32_t offset = darm_get_offset(d, du->regs[d->Rm]);
+    uint32_t offset = darm_get_offset(d, R_INVLD, du->regs[d->Rm], 0);
     uint32_t addr = du->regs[d->Rn];
 
     if(d->Rn == PC) addr += 8;
@@ -144,10 +144,18 @@ I(BL) {
     du->regs[PC] += d->imm + 8;
 }
 
+I(BX) {
+    du->regs[PC] = du->regs[d->Rm];
+    if(du->regs[PC] & 3) {
+        fprintf(stderr, "Branching to Thumb2\n");
+    }
+}
+
 I(data_proc) {
     uint32_t *dst = &du->regs[d->Rd];
     uint32_t src1 = du->regs[d->Rn];
-    uint32_t src2 = darm_get_offset(d, du->regs[d->Rm]);
+    uint32_t src2 =
+        darm_get_offset(d, d->Rs, du->regs[d->Rm], du->regs[d->Rs]);
 
     switch ((uint32_t) d->instr) {
     case I_ADD:
@@ -195,7 +203,7 @@ I(data_proc) {
 I(cmp_op) {
     uint32_t result, carry = 0, overflow, value;
 
-    value = darm_get_offset(d, du->regs[d->Rm]);
+    value = darm_get_offset(d, d->Rs, du->regs[d->Rm], du->regs[d->Rs]);
 
     switch ((uint32_t) d->instr) {
     case I_CMP:
@@ -217,9 +225,42 @@ I(cmp_op) {
 }
 
 I(MOV) {
-    du->regs[d->Rd] = du->regs[d->Rm];
+    du->regs[d->Rd] = darm_get_offset(d, R_INVLD, du->regs[d->Rm], 0);
 }
 
+I(MVN) {
+    du->regs[d->Rd] = ~darm_get_offset(d, R_INVLD, du->regs[d->Rm], 0);
+}
+
+I(mov_shift) {
+    uint32_t value, shift;
+
+    // if Rn isn't set, then this is shifted by an immediate
+    if(d->Rn == R_INVLD) {
+        value = du->regs[d->Rm];
+        shift = d->shift;
+    }
+    else {
+        value = du->regs[d->Rn];
+        shift = du->regs[d->Rm] & 0xff;
+    }
+
+    du->regs[d->Rd] = darm_get_offset(d, d->Rn, value, shift);
+}
+
+I(MUL) {
+    du->regs[d->Rd] = du->regs[d->Rn] * du->regs[d->Rm];
+}
+
+I(MLA) {
+    du->regs[d->Rd] = du->regs[d->Rn] * du->regs[d->Rm] + du->regs[d->Ra];
+}
+
+I(NOP) {
+}
+
+I(SVC) {
+}
 
 // define an instruction handler
 #define D(x) [I_##x] = _##x
@@ -231,12 +272,15 @@ void (*g_handlers[I_INSTRCNT])(darmu_t *du, const darm_t *d) = {
     A(STM, stm), A(STMDA, stm), A(STMDB, stm), A(PUSH, stm), A(STMIB, stm),
     A(LDM, ldm), A(POP, ldm), A(LDMDA, ldm), A(LDMDB, ldm), A(LDMIB, ldm),
 
-    D(B), D(MOV), D(BL),
+    D(B), D(MOV), D(BL), D(NOP), D(SVC), D(BX), D(MVN), D(MUL), D(MLA),
 
     A(CMP, cmp_op), A(CMN, cmp_op),
 
     A(STR, ldr_str), A(LDR, ldr_str), A(STRB, ldr_str), A(LDRB, ldr_str),
     A(STRD, ldr_str), A(LDRD, ldr_str), A(STRH, ldr_str), A(LDRH, ldr_str),
+
+    A(ASR, mov_shift), A(LSL, mov_shift), A(LSR, mov_shift),
+    A(ROR, mov_shift), A(RRX, mov_shift),
 
     A(ADD, data_proc), A(ADC, data_proc), A(AND, data_proc),
     A(BIC, data_proc), A(EOR, data_proc), A(ORR, data_proc),

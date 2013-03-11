@@ -92,7 +92,6 @@ int darmu_single_step(darmu_t *du)
 
     uint32_t pc = du->regs[PC];
 
-    // thanks to Valentin Pistol for this lovely piece of code
     int exec = 0;
     switch (d.cond) {
     case C_EQ: exec = du->flags.Z == 1; break;
