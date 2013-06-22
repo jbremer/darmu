@@ -3,17 +3,17 @@
 #include "darmu.h"
 #include "darm.h"
 
-static int32_t s_int(uint32_t x)
+static int64_t s_int(uint32_t x)
 {
-    return x >> 31 ? ~x + 1 : x;
+    return x >> 31 ? ((int64_t) x - 0x100000000ul) : x;
 }
 
 static uint32_t add_with_carry(uint32_t x, uint32_t y, uint32_t carry_in,
     uint32_t *carry_out, uint32_t *overflow)
 {
-    uint32_t unsigned_sum = x + y + carry_in;
-    int32_t signed_sum    = s_int(x) + s_int(y) + carry_in;
-    uint32_t result       = unsigned_sum & 0x7fffffff;
+    uint64_t unsigned_sum = (uint64_t) x + (uint64_t) y + carry_in;
+    int64_t signed_sum    = s_int(x) + s_int(y) + carry_in;
+    uint32_t result       = unsigned_sum & 0xffffffff;
     *carry_out            = result != unsigned_sum;
     *overflow             = s_int(result) != signed_sum;
     return result;
