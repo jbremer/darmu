@@ -103,11 +103,11 @@ int darmu_single_step(darmu_t *du)
     case C_VS: exec = du->flags.V == 1; break;
     case C_VC: exec = du->flags.V == 0; break;
     case C_HI: exec = du->flags.C == 1 && du->flags.Z == 0; break;
-    case C_LS: exec = du->flags.C == 0 && du->flags.Z == 1; break;
+    case C_LS: exec = du->flags.C == 0 || du->flags.Z == 1; break;
     case C_GE: exec = du->flags.N == du->flags.V; break;
     case C_LT: exec = du->flags.N != du->flags.V; break;
     case C_GT: exec = du->flags.Z == 0 && du->flags.N == du->flags.V; break;
-    case C_LE: exec = du->flags.Z == 1 && du->flags.N != du->flags.V; break;
+    case C_LE: exec = du->flags.Z == 1 || du->flags.N != du->flags.V; break;
     case C_AL: case C_UNCOND: exec = 1; break;
     case C_INVLD:
         fprintf(stderr, "Can't handle C_INVLD!\n");
