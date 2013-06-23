@@ -161,3 +161,45 @@ void darmu_write32(const darmu_t *d, uint32_t addr, uint32_t value)
 {
     *darmu_mapping_lookup_raw(d, addr) = value;
 }
+
+uint32_t darmu_apply_shift(const darm_t *d, uint32_t value, uint32_t shift,
+    uint32_t *carry_out)
+{
+    uint64_t result = 0;
+    switch (d->shift_type) {
+    case S_INVLD:
+        result = value;
+        *carry_out = 0;
+        break;
+
+    case S_LSL:
+        result = LSL(value, shift);
+        *carry_out = (result >> 32) & 1;
+        break;
+
+    case S_LSR:
+        result = LSR(value, shift);
+        *carry_out = LSR(value, shift-1) & 1;
+        break;
+
+    case S_ASR:
+        result = ASR(value, shift);
+        *carry_out = ASR(value, shift-1) & 1;
+        break;
+
+    case S_ROR:
+        result = ROR(value, shift);
+        *carry_out = (result >> 31) & 1;
+        break;
+    }
+    return (uint32_t) result;
+}
+
+uint32_t darmu_get_offset(const darm_t *d, darm_reg_t shift_register,
+    uint32_t value, uint32_t shift, uint32_t *carry_out)
+{
+    if(d->I == B_SET) return d->imm;
+
+    return darmu_apply_shift(d, value,
+        shift_register != R_INVLD ? shift : d->shift, carry_out);
+}

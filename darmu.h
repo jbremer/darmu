@@ -1,6 +1,8 @@
 #ifndef __DARMU__
 #define __DARMU__
 
+#include "darm.h"
+
 // mapping from file offset to virtual offset
 typedef struct _darmu_mapping_t {
     // data blob
@@ -55,5 +57,15 @@ uint32_t darmu_read32(const darmu_t *d, uint32_t addr);
 void darmu_write8(const darmu_t *d, uint32_t addr, uint8_t value);
 void darmu_write16(const darmu_t *d, uint32_t addr, uint16_t value);
 void darmu_write32(const darmu_t *d, uint32_t addr, uint32_t value);
+
+uint32_t darmu_apply_shift(const darm_t *d, uint32_t value, uint32_t shift,
+    uint32_t *carry_out);
+uint32_t darmu_get_offset(const darm_t *d, darm_reg_t shift_register,
+    uint32_t value, uint32_t shift, uint32_t *carry_out);
+
+#define LSL(val, shift) ((uint64_t)(val) << (shift))
+#define LSR(val, shift) ((uint64_t)(val) >> (shift))
+#define ASR(val, shift) ((int64_t)(val) >> (shift))
+#define ROR(val, rotate) (((val) >> (rotate)) | ((val) << (32 - (rotate))))
 
 #endif
