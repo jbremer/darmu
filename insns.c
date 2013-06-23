@@ -86,21 +86,33 @@ I(ldm) {
 }
 
 I(ldr_str) {
-    uint32_t offset = darm_get_offset(d, R_INVLD, du->regs[d->Rm], 0);
-    uint32_t addr = du->regs[d->Rn];
+    uint32_t addr, offset, carry;
+
+    offset = darmu_get_offset(d, R_INVLD, du->regs[d->Rm], 0, &carry);
+    addr = du->regs[d->Rn];
 
     if(d->Rn == PC) addr += 8;
 
-    if(d->U == B_SET) addr += (d->P == B_SET ? offset : 0);
-    else              addr -= (d->P == B_SET ? offset : 0);
+    if(d->P == B_SET && d->U != B_INVLD) {
+        if(d->U == B_SET) addr += offset;
+        else              addr -= offset;
+    }
 
     switch ((uint32_t) d->instr) {
     case I_LDRB:
         du->regs[d->Rt] = darmu_read8(du, addr);
         break;
 
+    case I_LDRSB:
+        du->regs[d->Rt] = (uint32_t)(int8_t) darmu_read8(du, addr);
+        break;
+
     case I_LDRH:
         du->regs[d->Rt] = darmu_read16(du, addr);
+        break;
+
+    case I_LDRSH:
+        du->regs[d->Rt] = (uint32_t)(int16_t) darmu_read16(du, addr);
         break;
 
     case I_LDR:
@@ -130,7 +142,12 @@ I(ldr_str) {
         break;
     }
 
-    if(d->W == B_SET) {
+    if(d->P == B_UNSET && d->U != B_INVLD) {
+        if(d->U == B_SET) addr += offset;
+        else              addr -= offset;
+    }
+
+    if(d->P == B_UNSET || d->W == B_SET) {
         du->regs[d->Rn] = addr;
     }
 }
@@ -152,10 +169,17 @@ I(BX) {
 }
 
 I(data_proc) {
-    uint32_t *dst = &du->regs[d->Rd];
-    uint32_t src1 = du->regs[d->Rn];
-    uint32_t src2 =
-        darm_get_offset(d, d->Rs, du->regs[d->Rm], du->regs[d->Rs]);
+    uint32_t *dst, src1, src2, carry;
+
+    dst = &du->regs[d->Rd];
+    src1 = du->regs[d->Rn];
+    src2 = darmu_get_offset(d, d->Rs, du->regs[d->Rm],
+        du->regs[d->Rs], &carry);
+
+    // temporary solution.. has to be improved
+    if(d->Rn == PC) {
+        src1 += 8;
+    }
 
     switch ((uint32_t) d->instr) {
     case I_ADD:
@@ -198,12 +222,20 @@ I(data_proc) {
         *dst = src1 - src2 - du->flags.C;
         break;
     }
+
+    if(d->S == B_SET) {
+        du->flags.N = *dst >> 31;
+        du->flags.Z = *dst == 0;
+        du->flags.C = carry;
+    }
 }
 
 I(cmp_op) {
-    uint32_t result, carry = 0, overflow, value;
+    uint32_t result, carry, overflow, value;
 
-    value = darm_get_offset(d, d->Rs, du->regs[d->Rm], du->regs[d->Rs]);
+    value = darmu_get_offset(d, d->Rs, du->regs[d->Rm],
+        du->regs[d->Rs], &carry);
+
 
     switch ((uint32_t) d->instr) {
     case I_CMP:
@@ -225,15 +257,19 @@ I(cmp_op) {
 }
 
 I(MOV) {
-    du->regs[d->Rd] = darm_get_offset(d, R_INVLD, du->regs[d->Rm], 0);
+    uint32_t carry;
+    du->regs[d->Rd] = darmu_get_offset(d, R_INVLD, du->regs[d->Rm],
+        0, &carry);
 }
 
 I(MVN) {
-    du->regs[d->Rd] = ~darm_get_offset(d, R_INVLD, du->regs[d->Rm], 0);
+    uint32_t carry;
+    du->regs[d->Rd] = ~darmu_get_offset(d, R_INVLD, du->regs[d->Rm],
+        0, &carry);
 }
 
 I(mov_shift) {
-    uint32_t value, shift;
+    uint32_t value, shift, carry;
 
     // if Rn isn't set, then this is shifted by an immediate
     if(d->Rn == R_INVLD) {
@@ -245,7 +281,7 @@ I(mov_shift) {
         shift = du->regs[d->Rm] & 0xff;
     }
 
-    du->regs[d->Rd] = darm_get_offset(d, d->Rn, value, shift);
+    du->regs[d->Rd] = darmu_get_offset(d, d->Rn, value, shift, &carry);
 }
 
 I(MUL) {
@@ -278,6 +314,7 @@ void (*g_handlers[I_INSTRCNT])(darmu_t *du, const darm_t *d) = {
 
     A(STR, ldr_str), A(LDR, ldr_str), A(STRB, ldr_str), A(LDRB, ldr_str),
     A(STRD, ldr_str), A(LDRD, ldr_str), A(STRH, ldr_str), A(LDRH, ldr_str),
+    A(LDRSB, ldr_str), A(LDRSH, ldr_str),
 
     A(ASR, mov_shift), A(LSL, mov_shift), A(LSR, mov_shift),
     A(ROR, mov_shift), A(RRX, mov_shift),
